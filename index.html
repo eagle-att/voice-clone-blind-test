@@ -58,6 +58,7 @@
       <li>Each round has 6 AI-generated voice clips (labeled Voice A–F)</li>
       <li>Play the "Original Voice" to hear the real person</li>
       <li>Listen to each clone, then drag to rank from most realistic (top) to least (bottom)</li>
+      <li>At the end, copy your results and send them to Andrew</li>
     </ol>
     <input type="text" id="tester-name" placeholder="Enter your name">
     <button class="btn-primary" onclick="startTest()" style="width:100%">Start Test</button>
@@ -86,10 +87,12 @@
   <div class="card">
     <h1>Results</h1>
     <div id="results-body"></div>
-    <div class="nav-buttons" style="margin-top:24px">
+    <div class="card" style="background:#f0f7ff; margin-top:16px;">
+      <p style="font-weight:600; margin-bottom:8px;">Last step: Send your results to Andrew</p>
+      <p style="font-size:14px; margin-bottom:12px;">Click the button below to copy your results, then paste them in a Marco Polo or Slack message to Andrew.</p>
       <button class="btn-primary" onclick="copyResults()" style="width:100%">Copy Results to Clipboard</button>
+      <div class="copy-msg" id="copy-msg">Copied! Now paste and send to Andrew.</div>
     </div>
-    <div class="copy-msg" id="copy-msg">Copied!</div>
   </div>
 </div>
 
