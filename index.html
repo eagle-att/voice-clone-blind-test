@@ -24,13 +24,20 @@
   .sentence-text { font-size: 16px; font-style: italic; color: #1d1d1f; margin-bottom: 16px; padding: 12px; background: #f5f5f7; border-radius: 8px; }
   .progress { font-size: 13px; color: #86868b; margin-bottom: 16px; }
   .rank-list { list-style: none; margin: 16px 0; }
-  .rank-item { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: #f5f5f7; border-radius: 8px; cursor: grab; user-select: none; transition: background 0.15s, transform 0.15s; }
+  .rank-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 8px; background: #f5f5f7; border-radius: 8px; cursor: grab; user-select: none; transition: background 0.15s, transform 0.15s; }
   .rank-item:active { cursor: grabbing; }
   .rank-item.dragging { opacity: 0.5; transform: scale(0.98); }
   .rank-item.drag-over { background: #e0f0ff; border: 2px dashed #007aff; }
-  .rank-num { font-size: 18px; font-weight: 700; color: #86868b; min-width: 28px; text-align: center; }
+  .rank-num { font-size: 18px; font-weight: 700; color: #86868b; min-width: 24px; text-align: center; }
   .rank-label { font-weight: 600; flex: 1; }
   .rank-item .btn-play { flex-shrink: 0; }
+  .move-buttons { display: none; flex-direction: column; gap: 2px; flex-shrink: 0; }
+  .move-btn { width: 32px; height: 24px; font-size: 14px; padding: 0; border-radius: 4px; background: #d2d2d7; color: #1d1d1f; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .move-btn:disabled { opacity: 0.25; cursor: default; }
+  @media (pointer: coarse), (max-width: 768px) {
+    .move-buttons { display: flex; }
+    .rank-item { cursor: default; }
+  }
   .instructions { margin: 12px 0; padding-left: 20px; }
   .instructions li { margin-bottom: 6px; }
   .nav-buttons { display: flex; gap: 12px; margin-top: 20px; }
@@ -57,7 +64,7 @@
       <li>You'll hear 6 rounds, each with a different sentence</li>
       <li>Each round has 6 AI-generated voice clips (labeled Voice A–F)</li>
       <li>Play the "Original Voice" to hear the real person</li>
-      <li>Listen to each clone, then drag to rank from most realistic (top) to least (bottom)</li>
+      <li>Listen to each clone, then rank from most realistic (top) to least (bottom) using the arrow buttons or drag-and-drop</li>
       <li>At the end, copy your results and send them to Andrew</li>
     </ol>
     <input type="text" id="tester-name" placeholder="Enter your name">
@@ -73,7 +80,7 @@
     <div class="sentence-text" id="sentence-text"></div>
     <button class="btn-ref" id="ref-btn" onclick="playRef()">&#9654; Play Original Voice</button>
     <h2>Rank best to worst</h2>
-    <p style="font-size:13px;color:#86868b;margin-bottom:8px;">Drag to reorder. #1 = most realistic.</p>
+    <p style="font-size:13px;color:#86868b;margin-bottom:8px;">Use arrows or drag to reorder. #1 = most realistic.</p>
     <ul class="rank-list" id="rank-list"></ul>
     <div class="nav-buttons">
       <button class="btn-secondary" id="prev-btn" onclick="prevRound()">Back</button>
@@ -228,23 +235,22 @@ function renderRound() {
     const voiceLabel = `Voice ${LABELS[labelIdx]}`;
 
     li.innerHTML = `
+      <div class="move-buttons">
+        <button class="move-btn" onclick="moveItem(this, -1)" ${rank === 0 ? 'disabled' : ''}>&uarr;</button>
+        <button class="move-btn" onclick="moveItem(this, 1)" ${rank === order.length - 1 ? 'disabled' : ''}>&darr;</button>
+      </div>
       <span class="rank-num">${rank + 1}</span>
       <span class="rank-label">${voiceLabel}</span>
       <button class="btn-play" data-label="${voiceLabel}" onclick="playAudio('${getAudioPath(platformIdx, r)}', this)">\u25B6 ${voiceLabel}</button>
     `;
 
-    // Drag events
+    // Drag events (desktop)
     li.addEventListener('dragstart', onDragStart);
     li.addEventListener('dragover', onDragOver);
     li.addEventListener('dragenter', onDragEnter);
     li.addEventListener('dragleave', onDragLeave);
     li.addEventListener('drop', onDrop);
     li.addEventListener('dragend', onDragEnd);
-
-    // Touch events for mobile
-    li.addEventListener('touchstart', onTouchStart, { passive: false });
-    li.addEventListener('touchmove', onTouchMove, { passive: false });
-    li.addEventListener('touchend', onTouchEnd);
 
     list.appendChild(li);
   });
@@ -285,48 +291,36 @@ function onDragEnd(e) {
   document.querySelectorAll('.rank-item').forEach(el => el.classList.remove('drag-over'));
 }
 
-// Touch-based reordering for mobile
-let touchStartY = 0;
-let touchItem = null;
-let touchClone = null;
-
-function onTouchStart(e) {
-  // Don't interfere with play button taps
-  if (e.target.closest('.btn-play')) return;
-  touchItem = this;
-  touchStartY = e.touches[0].clientY;
-  this.classList.add('dragging');
-}
-
-function onTouchMove(e) {
-  if (!touchItem) return;
-  e.preventDefault();
-  const touch = e.touches[0];
+// Move item up or down via buttons (mobile-friendly)
+function moveItem(btn, direction) {
+  const li = btn.closest('.rank-item');
   const list = document.getElementById('rank-list');
   const items = [...list.children];
-  const currentIdx = items.indexOf(touchItem);
+  const idx = items.indexOf(li);
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= items.length) return;
 
-  for (const item of items) {
-    if (item === touchItem) continue;
-    const rect = item.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    if (touch.clientY < midY && items.indexOf(item) < currentIdx) {
-      list.insertBefore(touchItem, item);
-      updateRankNumbers();
-      break;
-    } else if (touch.clientY > midY && items.indexOf(item) > currentIdx) {
-      list.insertBefore(touchItem, item.nextSibling);
-      updateRankNumbers();
-      break;
-    }
+  // Brief highlight animation
+  li.style.background = '#e0f0ff';
+  setTimeout(() => { li.style.background = ''; }, 200);
+
+  if (direction === -1) {
+    list.insertBefore(li, items[newIdx]);
+  } else {
+    list.insertBefore(li, items[newIdx].nextSibling);
   }
+  updateRankNumbers();
+  updateMoveButtons();
+  saveCurrentRanking();
 }
 
-function onTouchEnd(e) {
-  if (!touchItem) return;
-  touchItem.classList.remove('dragging');
-  saveCurrentRanking();
-  touchItem = null;
+function updateMoveButtons() {
+  const items = [...document.querySelectorAll('#rank-list .rank-item')];
+  items.forEach((li, i) => {
+    const btns = li.querySelectorAll('.move-btn');
+    btns[0].disabled = (i === 0);
+    btns[1].disabled = (i === items.length - 1);
+  });
 }
 
 function updateRankNumbers() {
