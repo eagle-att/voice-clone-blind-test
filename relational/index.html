@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relational Voice Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  h2 { font-size: 20px; margin-bottom: 12px; }
+  p, li { font-size: 15px; line-height: 1.5; color: #424245; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  textarea { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #d2d2d7; border-radius: 8px; margin: 12px 0; font-family: inherit; min-height: 100px; resize: vertical; }
+  button { padding: 12px 24px; font-size: 15px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .btn-primary { background: #007aff; color: #fff; }
+  .btn-secondary { background: #e8e8ed; color: #1d1d1f; }
+  .progress { font-size: 13px; color: #86868b; margin-bottom: 16px; }
+  .prompt-label { font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .prompt-text { font-size: 16px; font-style: italic; color: #1d1d1f; margin-bottom: 20px; padding: 12px; background: #f5f5f7; border-radius: 8px; }
+  .instructions { margin: 12px 0; padding-left: 20px; }
+  .instructions li { margin-bottom: 6px; }
+
+  /* Tester selector */
+  .tester-grid { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .tester-btn { padding: 16px; font-size: 16px; font-weight: 600; border: 2px solid #d2d2d7; border-radius: 10px; background: #fff; color: #1d1d1f; text-align: left; cursor: pointer; transition: all 0.15s; }
+  .tester-btn:hover:not(:disabled) { border-color: #007aff; background: #f0f7ff; }
+  .tester-btn.selected { border-color: #007aff; background: #f0f7ff; }
+  .tester-btn:disabled { opacity: 0.35; cursor: default; }
+  .tester-btn .tester-status { font-size: 12px; font-weight: 400; color: #86868b; margin-top: 2px; }
+
+  /* Play buttons */
+  .play-area { display: flex; gap: 12px; margin-bottom: 24px; }
+  .play-btn { flex: 1; padding: 20px 16px; font-size: 17px; font-weight: 600; border: 2px solid #d2d2d7; border-radius: 12px; background: #fff; color: #1d1d1f; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .play-btn:hover { border-color: #007aff; background: #f0f7ff; }
+  .play-btn.playing { border-color: #34c759; background: #f0fff4; }
+
+  /* Choice buttons */
+  .choice-section { margin-bottom: 20px; }
+  .choice-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .choice-group { display: flex; flex-direction: column; gap: 8px; }
+  .choice-btn { padding: 14px 16px; font-size: 15px; border: 2px solid #d2d2d7; border-radius: 10px; background: #fff; color: #1d1d1f; text-align: left; cursor: pointer; transition: all 0.15s; }
+  .choice-btn:hover { border-color: #007aff; }
+  .choice-btn.selected { border-color: #007aff; background: #f0f7ff; font-weight: 600; }
+
+  /* Confidence */
+  .confidence-group { display: flex; gap: 8px; }
+  .confidence-btn { flex: 1; padding: 10px 8px; font-size: 13px; border: 2px solid #d2d2d7; border-radius: 8px; background: #fff; color: #424245; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .confidence-btn:hover { border-color: #007aff; }
+  .confidence-btn.selected { border-color: #007aff; background: #f0f7ff; font-weight: 600; color: #1d1d1f; }
+
+  /* Nav */
+  .nav-buttons { display: flex; gap: 12px; margin-top: 20px; }
+  .nav-buttons button { flex: 1; }
+
+  /* Results */
+  .result-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e8e8ed; font-size: 14px; }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { color: #86868b; }
+  .result-value { font-weight: 600; }
+  .summary-stat { font-size: 18px; font-weight: 700; text-align: center; margin: 16px 0; }
+  .copy-msg { color: #34c759; font-size: 13px; margin-top: 8px; display: none; }
+  .error-name { color: #ff3b30; font-size: 13px; display: none; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- INTRO SCREEN -->
+<div id="intro" class="screen active">
+  <div class="card">
+    <h1>Relational Voice Test</h1>
+    <p>Help us test whether AI voice clones can capture how Andrew sounds when talking to <em>you</em> specifically.</p>
+    <ol class="instructions">
+      <li>You'll hear 4 rounds, each with a different type of sentence</li>
+      <li>Each round has two voice clips of Andrew</li>
+      <li>Listen to both, then pick which one sounds more like Andrew talking to <strong>you</strong></li>
+      <li>At the end, copy your results and send them to Andrew</li>
+    </ol>
+    <p style="font-weight:600; margin-top:16px; margin-bottom:4px;">Who are you?</p>
+    <div class="tester-grid">
+      <button class="tester-btn" onclick="selectTester('abbey', this)">
+        Abbey
+        <div class="tester-status">Ready</div>
+      </button>
+      <button class="tester-btn" onclick="selectTester('grant', this)" disabled>
+        Grant
+        <div class="tester-status">Coming soon</div>
+      </button>
+      <button class="tester-btn" onclick="selectTester('adam', this)" disabled>
+        Adam
+        <div class="tester-status">Coming soon</div>
+      </button>
+    </div>
+    <div class="error-name" id="error-name"></div>
+    <button class="btn-primary" id="start-btn" onclick="startTest()" style="width:100%" disabled>Start Test</button>
+  </div>
+</div>
+
+<!-- ROUND SCREEN -->
+<div id="round" class="screen">
+  <div class="card">
+    <div class="progress" id="progress"></div>
+    <div class="prompt-label" id="prompt-label"></div>
+    <div class="prompt-text" id="prompt-text"></div>
+
+    <div class="play-area">
+      <button class="play-btn" id="play-1" onclick="playVoice(1)">&#9654; Voice 1</button>
+      <button class="play-btn" id="play-2" onclick="playVoice(2)">&#9654; Voice 2</button>
+    </div>
+
+    <div class="choice-section">
+      <h3>Which sounds more like Andrew talking to you?</h3>
+      <div class="choice-group" id="choice-group">
+        <button class="choice-btn" onclick="selectChoice(1)">Voice 1 sounds more like Andrew talking to me</button>
+        <button class="choice-btn" onclick="selectChoice(2)">Voice 2 sounds more like Andrew talking to me</button>
+      </div>
+    </div>
+
+    <div class="choice-section">
+      <h3>How sure are you?</h3>
+      <div class="confidence-group" id="confidence-group">
+        <button class="confidence-btn" onclick="selectConfidence('Very sure')">Very sure</button>
+        <button class="confidence-btn" onclick="selectConfidence('Somewhat sure')">Somewhat sure</button>
+        <button class="confidence-btn" onclick="selectConfidence('Guessing')">Guessing</button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-secondary" id="prev-btn" onclick="prevRound()">Back</button>
+      <button class="btn-primary" id="next-btn" onclick="nextRound()" disabled>Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results" class="screen">
+  <div class="card">
+    <h1>Results</h1>
+    <div id="results-body"></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:8px;">One last thing</h3>
+    <p style="font-size:14px; margin-bottom:8px;">Was there a moment in any clip where something felt wrong or unnatural? If so, which voice and what did you notice?</p>
+    <textarea id="feedback" placeholder="Optional — anything you noticed..."></textarea>
+  </div>
+  <div class="card" style="background:#f0f7ff;">
+    <p style="font-weight:600; margin-bottom:8px;">Send your results to Andrew</p>
+    <p style="font-size:14px; margin-bottom:12px;">Click below to copy, then paste in a Marco Polo or text.</p>
+    <button class="btn-primary" onclick="copyResults()" style="width:100%">Copy Results to Clipboard</button>
+    <div class="copy-msg" id="copy-msg">Copied! Now paste and send to Andrew.</div>
+  </div>
+</div>
+
+<script>
+var PROMPTS = [
+  {
+    key: 'casual',
+    label: 'Casual / Warm',
+    text: function(name) {
+      return 'Hey ' + name + ', I was just thinking about you. Nothing major, just wanted to say what\'s up and see how your day\'s going.';
+    }
+  },
+  {
+    key: 'excited',
+    label: 'Excited / High Energy',
+    text: function() {
+      return 'Dude, okay I have to tell you something. So that thing I was telling you about actually happened and I\'m kind of freaking out about it. Like, I did not see that coming.';
+    }
+  },
+  {
+    key: 'reflective',
+    label: 'Reflective / Vulnerable',
+    text: function() {
+      return 'I\'ve been thinking a lot about this lately and I don\'t totally have it figured out yet. But I feel like things are shifting in a good direction, you know? I don\'t know, just wanted to process that out loud with you.';
+    }
+  },
+  {
+    key: 'playful',
+    label: 'Playful / Teasing',
+    text: function() {
+      return 'Okay so I have a question for you and I already know what you\'re gonna say, but hear me out. Just give me like thirty seconds before you judge me.';
+    }
+  }
+];
+
+// Audio file config per tester
+// voice-a = ElevenLabs Pro (relationship-trained), voice-b = Cartesia Instant
+var TESTER_CONFIG = {
+  abbey: {
+    name: 'Abbey',
+    enabled: true,
+    extensions: { a: 'mp3', b: 'wav' }
+  },
+  grant: {
+    name: 'Grant',
+    enabled: false,
+    extensions: { a: 'mp3', b: 'wav' }
+  },
+  adam: {
+    name: 'Adam',
+    enabled: false,
+    extensions: { a: 'mp3', b: 'wav' }
+  }
+};
+
+var testerName = '';
+var testerKey = '';
+var currentRound = 0;
+var voiceMapping = [];
+var answers = [];
+var currentAudio = null;
+
+// Seeded PRNG (mulberry32 — same as original blind test)
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function selectTester(key, btn) {
+  var config = TESTER_CONFIG[key];
+  if (!config || !config.enabled) return;
+
+  testerKey = key;
+  testerName = config.name;
+
+  document.querySelectorAll('.tester-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('error-name').style.display = 'none';
+}
+
+function startTest() {
+  if (!testerKey) {
+    document.getElementById('error-name').style.display = 'block';
+    document.getElementById('error-name').textContent = 'Please select who you are.';
+    return;
+  }
+
+  var rng = mulberry32(hashString(testerKey));
+  var voice1IsA = rng() < 0.5;
+  voiceMapping = PROMPTS.map(function() {
+    return voice1IsA ? { 1: 'a', 2: 'b' } : { 1: 'b', 2: 'a' };
+  });
+
+  answers = PROMPTS.map(function() { return { choice: null, confidence: null }; });
+
+  currentRound = 0;
+  renderRound();
+  show('round');
+}
+
+function getAudioPath(voiceNum, roundIdx) {
+  var fileVoice = voiceMapping[roundIdx][voiceNum];
+  var prompt = PROMPTS[roundIdx];
+  var num = String(roundIdx + 1).padStart(2, '0');
+  var ext = TESTER_CONFIG[testerKey].extensions[fileVoice];
+  return 'audio/' + testerKey + '/voice-' + fileVoice + '-' + num + '-' + prompt.key + '.' + ext;
+}
+
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+  document.querySelectorAll('.play-btn').forEach(function(b) { b.classList.remove('playing'); });
+}
+
+function playVoice(num) {
+  var btn = document.getElementById('play-' + num);
+  var wasPlaying = btn.classList.contains('playing');
+
+  stopAudio();
+
+  if (wasPlaying) return;
+
+  var src = getAudioPath(num, currentRound);
+  currentAudio = new Audio(src);
+  btn.classList.add('playing');
+  btn.innerHTML = '&#9632; Voice ' + num;
+
+  currentAudio.onended = function() {
+    btn.classList.remove('playing');
+    btn.innerHTML = '&#9654; Voice ' + num;
+    currentAudio = null;
+  };
+
+  currentAudio.onerror = function() {
+    btn.classList.remove('playing');
+    btn.innerHTML = '&#9654; Voice ' + num;
+    currentAudio = null;
+  };
+
+  currentAudio.play();
+}
+
+function selectChoice(num) {
+  answers[currentRound].choice = num;
+  var btns = document.querySelectorAll('#choice-group .choice-btn');
+  btns.forEach(function(b, i) { b.classList.toggle('selected', i + 1 === num); });
+  checkCanProceed();
+}
+
+function selectConfidence(level) {
+  answers[currentRound].confidence = level;
+  var btns = document.querySelectorAll('#confidence-group .confidence-btn');
+  btns.forEach(function(b) { b.classList.toggle('selected', b.textContent === level); });
+  checkCanProceed();
+}
+
+function checkCanProceed() {
+  var a = answers[currentRound];
+  document.getElementById('next-btn').disabled = !(a.choice && a.confidence);
+}
+
+function renderRound() {
+  stopAudio();
+  var r = currentRound;
+  var p = PROMPTS[r];
+
+  document.getElementById('progress').textContent = 'Round ' + (r + 1) + ' of ' + PROMPTS.length;
+  document.getElementById('prompt-label').textContent = p.label;
+  document.getElementById('prompt-text').textContent = '"' + (typeof p.text === 'function' ? p.text(testerName) : p.text) + '"';
+
+  document.getElementById('play-1').innerHTML = '&#9654; Voice 1';
+  document.getElementById('play-2').innerHTML = '&#9654; Voice 2';
+  document.getElementById('play-1').classList.remove('playing');
+  document.getElementById('play-2').classList.remove('playing');
+
+  var a = answers[r];
+  var choiceBtns = document.querySelectorAll('#choice-group .choice-btn');
+  choiceBtns.forEach(function(b, i) { b.classList.toggle('selected', a.choice === i + 1); });
+
+  var confBtns = document.querySelectorAll('#confidence-group .confidence-btn');
+  confBtns.forEach(function(b) { b.classList.toggle('selected', a.confidence === b.textContent); });
+
+  document.getElementById('prev-btn').style.display = r === 0 ? 'none' : '';
+  document.getElementById('next-btn').textContent = r === PROMPTS.length - 1 ? 'See Results' : 'Next';
+  checkCanProceed();
+}
+
+function nextRound() {
+  if (currentRound < PROMPTS.length - 1) {
+    currentRound++;
+    renderRound();
+    window.scrollTo(0, 0);
+  } else {
+    showResults();
+  }
+}
+
+function prevRound() {
+  if (currentRound > 0) {
+    currentRound--;
+    renderRound();
+    window.scrollTo(0, 0);
+  }
+}
+
+function showResults() {
+  stopAudio();
+  var body = document.getElementById('results-body');
+
+  var v1Count = 0;
+  var v2Count = 0;
+  var html = '';
+
+  answers.forEach(function(a, i) {
+    var p = PROMPTS[i];
+    if (a.choice === 1) v1Count++;
+    else v2Count++;
+    html += '<div class="result-row">';
+    html += '<span class="result-label">' + p.label + '</span>';
+    html += '<span class="result-value">Voice ' + a.choice + ' &mdash; ' + a.confidence + '</span>';
+    html += '</div>';
+  });
+
+  html = '<div class="summary-stat">Voice 1: ' + v1Count + '/4 &nbsp;&bull;&nbsp; Voice 2: ' + v2Count + '/4</div>' + html;
+
+  body.innerHTML = html;
+  show('results');
+}
+
+function buildResultsText() {
+  var feedback = document.getElementById('feedback').value.trim();
+  var text = 'Relational Voice Test Results\n';
+  text += 'Tester: ' + testerName + '\n';
+  text += 'Date: ' + new Date().toISOString().split('T')[0] + '\n';
+
+  var v1Count = 0;
+  var v2Count = 0;
+
+  answers.forEach(function(a, i) {
+    var p = PROMPTS[i];
+    if (a.choice === 1) v1Count++;
+    else v2Count++;
+    text += '\nRound ' + (i + 1) + ' (' + p.label + '): Voice ' + a.choice + ' \u2014 ' + a.confidence;
+  });
+
+  text += '\n\nSummary: Voice 1 picked ' + v1Count + '/4, Voice 2 picked ' + v2Count + '/4';
+
+  if (feedback) {
+    text += '\n\nFeedback: "' + feedback + '"';
+  }
+
+  var mapping = voiceMapping[0];
+  text += '\n\n[Mapping: Voice 1 = file voice-' + mapping[1] + ', Voice 2 = file voice-' + mapping[2] + ']';
+
+  return text;
+}
+
+function copyResults() {
+  navigator.clipboard.writeText(buildResultsText()).then(function() {
+    var msg = document.getElementById('copy-msg');
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  });
+}
+</script>
+</body>
+</html>
