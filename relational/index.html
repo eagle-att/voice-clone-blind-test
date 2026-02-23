@@ -48,8 +48,8 @@
   .choice-btn.selected { border-color: #007aff; background: #f0f7ff; font-weight: 600; }
 
   /* Confidence */
-  .confidence-group { display: flex; gap: 8px; }
-  .confidence-btn { flex: 1; padding: 10px 8px; font-size: 13px; border: 2px solid #d2d2d7; border-radius: 8px; background: #fff; color: #424245; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .confidence-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .confidence-btn { flex: 1; min-width: calc(50% - 6px); padding: 10px 8px; font-size: 13px; border: 2px solid #d2d2d7; border-radius: 8px; background: #fff; color: #424245; text-align: center; cursor: pointer; transition: all 0.15s; }
   .confidence-btn:hover { border-color: #007aff; }
   .confidence-btn.selected { border-color: #007aff; background: #f0f7ff; font-weight: 600; color: #1d1d1f; }
 
@@ -121,11 +121,12 @@
     </div>
 
     <div class="choice-section">
-      <h3>How sure are you?</h3>
+      <h3>How much does your pick sound like Andrew?</h3>
       <div class="confidence-group" id="confidence-group">
-        <button class="confidence-btn" onclick="selectConfidence('Very sure')">Very sure</button>
-        <button class="confidence-btn" onclick="selectConfidence('Somewhat sure')">Somewhat sure</button>
-        <button class="confidence-btn" onclick="selectConfidence('Guessing')">Guessing</button>
+        <button class="confidence-btn" onclick="selectConfidence('Exactly')">Exactly like him</button>
+        <button class="confidence-btn" onclick="selectConfidence('Pretty close')">Pretty close</button>
+        <button class="confidence-btn" onclick="selectConfidence('Somewhat')">Somewhat</button>
+        <button class="confidence-btn" onclick="selectConfidence('Not really')">Not really</button>
       </div>
     </div>
 
@@ -393,7 +394,7 @@ function showResults() {
     else v2Count++;
     html += '<div class="result-row">';
     html += '<span class="result-label">' + p.label + '</span>';
-    html += '<span class="result-value">Voice ' + a.choice + ' &mdash; ' + a.confidence + '</span>';
+    html += '<span class="result-value">Voice ' + a.choice + ' &mdash; ' + a.confidence + ' like him</span>';
     html += '</div>';
   });
 
