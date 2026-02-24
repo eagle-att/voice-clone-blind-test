@@ -86,9 +86,9 @@
         Abbey
         <div class="tester-status">Ready</div>
       </button>
-      <button class="tester-btn" onclick="selectTester('grant', this)" disabled>
+      <button class="tester-btn" onclick="selectTester('grant', this)">
         Grant
-        <div class="tester-status">Coming soon</div>
+        <div class="tester-status">Ready</div>
       </button>
       <button class="tester-btn" onclick="selectTester('adam', this)" disabled>
         Adam
@@ -198,7 +198,7 @@ var TESTER_CONFIG = {
   },
   grant: {
     name: 'Grant',
-    enabled: false,
+    enabled: true,
     extensions: { a: 'mp3', b: 'wav' }
   },
   adam: {
