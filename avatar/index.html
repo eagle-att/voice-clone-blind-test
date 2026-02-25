@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Blind Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  h2 { font-size: 20px; margin-bottom: 12px; }
+  p, li { font-size: 15px; line-height: 1.5; color: #424245; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  textarea { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #d2d2d7; border-radius: 8px; margin: 12px 0; font-family: inherit; min-height: 80px; resize: vertical; }
+  input[type="text"] { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #d2d2d7; border-radius: 8px; margin: 12px 0; }
+  button { padding: 12px 24px; font-size: 15px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .btn-primary { background: #007aff; color: #fff; }
+  .btn-secondary { background: #e8e8ed; color: #1d1d1f; }
+  .progress { font-size: 13px; color: #86868b; margin-bottom: 16px; }
+  .instructions { margin: 12px 0; padding-left: 20px; }
+  .instructions li { margin-bottom: 6px; }
+
+  /* Video player */
+  .video-container { margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; }
+  .video-container video { width: 100%; display: block; }
+
+  /* Avatar label */
+  .avatar-label { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 16px; color: #1d1d1f; }
+
+  /* Rating */
+  .rating-section { margin-bottom: 20px; }
+  .rating-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .rating-description { font-size: 12px; color: #86868b; margin-bottom: 8px; }
+  .rating-group { display: flex; gap: 6px; }
+  .rating-btn { flex: 1; padding: 12px 4px; font-size: 14px; font-weight: 600; border: 2px solid #d2d2d7; border-radius: 8px; background: #fff; color: #424245; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .rating-btn:hover { border-color: #007aff; }
+  .rating-btn.selected { border-color: #007aff; background: #007aff; color: #fff; }
+  .rating-labels { display: flex; justify-content: space-between; font-size: 11px; color: #86868b; margin-top: 4px; padding: 0 4px; }
+
+  /* Nav */
+  .nav-buttons { display: flex; gap: 12px; margin-top: 20px; }
+  .nav-buttons button { flex: 1; }
+
+  /* Results */
+  .result-card { padding: 16px; background: #f5f5f7; border-radius: 8px; margin-bottom: 12px; }
+  .result-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .result-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+  .result-label { color: #86868b; }
+  .result-value { font-weight: 600; }
+  .result-avg { font-size: 18px; font-weight: 700; text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #d2d2d7; }
+  .copy-msg { color: #34c759; font-size: 13px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- INTRO SCREEN -->
+<div id="intro" class="screen active">
+  <div class="card">
+    <h1>Avatar Blind Test</h1>
+    <p>Help us evaluate AI-generated talking head videos. You'll watch short clips and rate how realistic they look.</p>
+    <ol class="instructions">
+      <li>You'll see several video clips of an AI-generated avatar</li>
+      <li>Each clip is made by a different method (you won't know which)</li>
+      <li>Rate each clip on 4 dimensions using a 1-5 scale</li>
+      <li>At the end, copy your results and send them to Andrew</li>
+    </ol>
+    <p style="font-size:13px; color:#86868b; margin-top:12px;"><strong>Rating scale:</strong> 1 = Obviously AI, 5 = Could fool you into thinking it's real</p>
+    <input type="text" id="tester-name" placeholder="Enter your name">
+    <button class="btn-primary" onclick="startTest()" style="width:100%">Start Test</button>
+  </div>
+</div>
+
+<!-- RATING SCREEN -->
+<div id="rating" class="screen">
+  <div class="card">
+    <div class="progress" id="progress"></div>
+    <div class="avatar-label" id="avatar-label"></div>
+
+    <div class="video-container">
+      <video id="video-player" controls playsinline>
+        <source id="video-source" src="" type="video/mp4">
+      </video>
+    </div>
+
+    <div class="rating-section">
+      <h3>Visual Realism</h3>
+      <div class="rating-description">Does this look like a real person talking?</div>
+      <div class="rating-group" id="rating-realism"></div>
+      <div class="rating-labels"><span>Obviously AI</span><span>Totally real</span></div>
+    </div>
+
+    <div class="rating-section">
+      <h3>Lip Sync</h3>
+      <div class="rating-description">Does the mouth match what's being said?</div>
+      <div class="rating-group" id="rating-lipsync"></div>
+      <div class="rating-labels"><span>Way off</span><span>Perfect match</span></div>
+    </div>
+
+    <div class="rating-section">
+      <h3>Natural Movement</h3>
+      <div class="rating-description">Do the head, eyes, and expressions feel natural?</div>
+      <div class="rating-group" id="rating-movement"></div>
+      <div class="rating-labels"><span>Robotic</span><span>Completely natural</span></div>
+    </div>
+
+    <div class="rating-section">
+      <h3>Overall Impression</h3>
+      <div class="rating-description">If someone showed you this, would you think it's a real person?</div>
+      <div class="rating-group" id="rating-overall"></div>
+      <div class="rating-labels"><span>Not at all</span><span>Absolutely</span></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-secondary" id="prev-btn" onclick="prevVideo()">Back</button>
+      <button class="btn-primary" id="next-btn" onclick="nextVideo()" disabled>Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results" class="screen">
+  <div class="card">
+    <h1>Results</h1>
+    <div id="results-body"></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:8px;">Any other thoughts?</h3>
+    <p style="font-size:14px; margin-bottom:8px;">Which avatar felt most real? Least real? Anything that stood out?</p>
+    <textarea id="feedback" placeholder="Optional — anything you noticed..."></textarea>
+  </div>
+  <div class="card" style="background:#f0f7ff;">
+    <p style="font-weight:600; margin-bottom:8px;">Send your results to Andrew</p>
+    <p style="font-size:14px; margin-bottom:12px;">Click below to copy, then paste in a Marco Polo or text.</p>
+    <button class="btn-primary" onclick="copyResults()" style="width:100%">Copy Results to Clipboard</button>
+    <div class="copy-msg" id="copy-msg">Copied! Now paste and send to Andrew.</div>
+  </div>
+</div>
+
+<script>
+// --- VIDEO CONFIG ---
+// Each entry: { id, label (shown to tester), file, platform (hidden) }
+// Randomized per tester via seeded PRNG
+var VIDEOS = [
+  { id: 'heygen-photo', label: 'Avatar', file: 'videos/heygen-photo-casual.mp4', platform: 'HeyGen (photo-only)' },
+  { id: 'heygen-video', label: 'Avatar', file: 'videos/heygen-video-casual.mp4', platform: 'HeyGen (video-trained)' }
+  // Add more platforms here as they're tested:
+  // { id: 'd-id', label: 'Avatar', file: 'videos/d-id-casual.mp4', platform: 'D-ID' },
+  // { id: 'synthesia', label: 'Avatar', file: 'videos/synthesia-casual.mp4', platform: 'Synthesia' },
+  // { id: 'tavus', label: 'Avatar', file: 'videos/tavus-casual.mp4', platform: 'Tavus' },
+];
+
+var DIMENSIONS = ['realism', 'lipsync', 'movement', 'overall'];
+var DIMENSION_LABELS = {
+  realism: 'Visual Realism',
+  lipsync: 'Lip Sync',
+  movement: 'Natural Movement',
+  overall: 'Overall Impression'
+};
+
+var testerName = '';
+var currentIdx = 0;
+var shuffledOrder = []; // indices into VIDEOS
+var ratings = []; // per-video: { realism, lipsync, movement, overall }
+
+// Seeded PRNG
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
+function shuffleArray(arr, rng) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(rng() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function startTest() {
+  testerName = document.getElementById('tester-name').value.trim();
+  if (!testerName) { alert('Please enter your name.'); return; }
+
+  var rng = mulberry32(hashString(testerName.toLowerCase()));
+  var indices = [];
+  for (var i = 0; i < VIDEOS.length; i++) indices.push(i);
+  shuffledOrder = shuffleArray(indices, rng);
+
+  ratings = VIDEOS.map(function() {
+    return { realism: null, lipsync: null, movement: null, overall: null };
+  });
+
+  currentIdx = 0;
+  renderVideo();
+  show('rating');
+}
+
+function buildRatingButtons(containerId, dimension) {
+  var container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (var i = 1; i <= 5; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'rating-btn';
+    btn.textContent = i;
+    btn.setAttribute('data-value', i);
+    btn.setAttribute('data-dimension', dimension);
+    btn.onclick = function() {
+      var val = parseInt(this.getAttribute('data-value'));
+      var dim = this.getAttribute('data-dimension');
+      var videoIdx = shuffledOrder[currentIdx];
+      ratings[videoIdx][dim] = val;
+      // Update selected state
+      this.parentNode.querySelectorAll('.rating-btn').forEach(function(b) {
+        b.classList.toggle('selected', parseInt(b.getAttribute('data-value')) === val);
+      });
+      checkCanProceed();
+    };
+    container.appendChild(btn);
+  }
+}
+
+function renderVideo() {
+  var videoIdx = shuffledOrder[currentIdx];
+  var video = VIDEOS[videoIdx];
+  var r = ratings[videoIdx];
+
+  document.getElementById('progress').textContent = 'Video ' + (currentIdx + 1) + ' of ' + VIDEOS.length;
+  document.getElementById('avatar-label').textContent = video.label + ' ' + String.fromCharCode(65 + currentIdx);
+
+  var player = document.getElementById('video-player');
+  var source = document.getElementById('video-source');
+  source.src = video.file;
+  player.load();
+
+  // Build rating buttons
+  DIMENSIONS.forEach(function(dim) {
+    buildRatingButtons('rating-' + dim, dim);
+    // Restore previous rating if going back
+    if (r[dim]) {
+      var container = document.getElementById('rating-' + dim);
+      container.querySelectorAll('.rating-btn').forEach(function(btn) {
+        btn.classList.toggle('selected', parseInt(btn.getAttribute('data-value')) === r[dim]);
+      });
+    }
+  });
+
+  document.getElementById('prev-btn').style.display = currentIdx === 0 ? 'none' : '';
+  document.getElementById('next-btn').textContent = currentIdx === VIDEOS.length - 1 ? 'See Results' : 'Next';
+  checkCanProceed();
+}
+
+function checkCanProceed() {
+  var videoIdx = shuffledOrder[currentIdx];
+  var r = ratings[videoIdx];
+  var allRated = DIMENSIONS.every(function(dim) { return r[dim] !== null; });
+  document.getElementById('next-btn').disabled = !allRated;
+}
+
+function nextVideo() {
+  if (currentIdx < VIDEOS.length - 1) {
+    currentIdx++;
+    renderVideo();
+    window.scrollTo(0, 0);
+  } else {
+    showResults();
+  }
+}
+
+function prevVideo() {
+  if (currentIdx > 0) {
+    currentIdx--;
+    renderVideo();
+    window.scrollTo(0, 0);
+  }
+}
+
+function showResults() {
+  var body = document.getElementById('results-body');
+  var html = '';
+
+  shuffledOrder.forEach(function(videoIdx, displayIdx) {
+    var video = VIDEOS[videoIdx];
+    var r = ratings[videoIdx];
+    var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
+
+    html += '<div class="result-card">';
+    html += '<h3>' + video.label + ' ' + String.fromCharCode(65 + displayIdx) + '</h3>';
+    DIMENSIONS.forEach(function(dim) {
+      html += '<div class="result-row">';
+      html += '<span class="result-label">' + DIMENSION_LABELS[dim] + '</span>';
+      html += '<span class="result-value">' + r[dim] + '/5</span>';
+      html += '</div>';
+    });
+    html += '<div class="result-avg">Average: ' + avg.toFixed(1) + '/5</div>';
+    html += '</div>';
+  });
+
+  body.innerHTML = html;
+  show('results');
+}
+
+function buildResultsText() {
+  var feedback = document.getElementById('feedback').value.trim();
+  var text = 'Avatar Blind Test Results\n';
+  text += 'Tester: ' + testerName + '\n';
+  text += 'Date: ' + new Date().toISOString().split('T')[0] + '\n';
+
+  shuffledOrder.forEach(function(videoIdx, displayIdx) {
+    var video = VIDEOS[videoIdx];
+    var r = ratings[videoIdx];
+    var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
+    var letter = String.fromCharCode(65 + displayIdx);
+
+    text += '\n' + video.label + ' ' + letter + ':';
+    text += '\n  Visual Realism: ' + r.realism + '/5';
+    text += '\n  Lip Sync: ' + r.lipsync + '/5';
+    text += '\n  Natural Movement: ' + r.movement + '/5';
+    text += '\n  Overall: ' + r.overall + '/5';
+    text += '\n  Average: ' + avg.toFixed(1) + '/5';
+  });
+
+  if (feedback) {
+    text += '\n\nFeedback: "' + feedback + '"';
+  }
+
+  // Mapping for Andrew to decode
+  text += '\n\n[Mapping:';
+  shuffledOrder.forEach(function(videoIdx, displayIdx) {
+    var letter = String.fromCharCode(65 + displayIdx);
+    text += ' ' + letter + ' = ' + VIDEOS[videoIdx].platform + ',';
+  });
+  text = text.slice(0, -1) + ']';
+
+  return text;
+}
+
+function copyResults() {
+  navigator.clipboard.writeText(buildResultsText()).then(function() {
+    var msg = document.getElementById('copy-msg');
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  });
+}
+</script>
+</body>
+</html>
