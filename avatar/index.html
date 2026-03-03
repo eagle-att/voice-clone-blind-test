@@ -23,6 +23,9 @@
   .progress { font-size: 13px; color: #86868b; margin-bottom: 16px; }
   .instructions { margin: 12px 0; padding-left: 20px; }
   .instructions li { margin-bottom: 6px; }
+  .section-intro { background: #f0f7ff; border-left: 3px solid #007aff; padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  .section-intro h2 { color: #007aff; font-size: 16px; margin-bottom: 6px; }
+  .section-intro p { font-size: 14px; color: #424245; }
 
   /* Video player */
   .video-container { margin-bottom: 20px; border-radius: 12px; overflow: hidden; background: #000; }
@@ -46,6 +49,7 @@
   .nav-buttons button { flex: 1; }
 
   /* Results */
+  .results-section-header { font-size: 16px; font-weight: 700; color: #007aff; margin: 16px 0 8px; }
   .result-card { padding: 16px; background: #f5f5f7; border-radius: 8px; margin-bottom: 12px; }
   .result-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
   .result-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
@@ -63,14 +67,23 @@
     <h1>Avatar Blind Test</h1>
     <p>Help us evaluate AI-generated talking head videos. You'll watch short clips and rate how realistic they look.</p>
     <ol class="instructions">
-      <li>You'll see several video clips of an AI-generated avatar</li>
-      <li>Each clip is made by a different method (you won't know which)</li>
+      <li>You'll go through two sections</li>
+      <li><strong>Section 1:</strong> Compare two clips saying the same thing — which looks more real?</li>
+      <li><strong>Section 2:</strong> Watch clips with different emotions — where does it break?</li>
       <li>Rate each clip on 4 dimensions using a 1-5 scale</li>
       <li>At the end, copy your results and send them to Andrew</li>
     </ol>
     <p style="font-size:13px; color:#86868b; margin-top:12px;"><strong>Rating scale:</strong> 1 = Obviously AI, 5 = Could fool you into thinking it's real</p>
     <input type="text" id="tester-name" placeholder="Enter your name">
     <button class="btn-primary" onclick="startTest()" style="width:100%">Start Test</button>
+  </div>
+</div>
+
+<!-- SECTION INTRO SCREEN -->
+<div id="section-intro" class="screen">
+  <div class="card">
+    <div id="section-intro-content"></div>
+    <button class="btn-primary" onclick="beginSection()" style="width:100%; margin-top:16px;">Continue</button>
   </div>
 </div>
 
@@ -129,7 +142,7 @@
   </div>
   <div class="card">
     <h3 style="margin-bottom:8px;">Any other thoughts?</h3>
-    <p style="font-size:14px; margin-bottom:8px;">Which avatar felt most real? Least real? Anything that stood out?</p>
+    <p style="font-size:14px; margin-bottom:8px;">Which clip felt most real? Least real? Any specific moments that broke the illusion?</p>
     <textarea id="feedback" placeholder="Optional — anything you noticed..."></textarea>
   </div>
   <div class="card" style="background:#f0f7ff;">
@@ -142,15 +155,31 @@
 
 <script>
 // --- VIDEO CONFIG ---
-// Each entry: { id, label (shown to tester), file, platform (hidden) }
-// Randomized per tester via seeded PRNG
-var VIDEOS = [
-  { id: 'heygen-photo', label: 'Avatar', file: 'videos/heygen-photo-casual.mp4', platform: 'HeyGen (photo-only)' },
-  { id: 'heygen-video', label: 'Avatar', file: 'videos/heygen-video-casual.mp4', platform: 'HeyGen (video-trained)' }
-  // Add more platforms here as they're tested:
-  // { id: 'd-id', label: 'Avatar', file: 'videos/d-id-casual.mp4', platform: 'D-ID' },
-  // { id: 'synthesia', label: 'Avatar', file: 'videos/synthesia-casual.mp4', platform: 'Synthesia' },
-  // { id: 'tavus', label: 'Avatar', file: 'videos/tavus-casual.mp4', platform: 'Tavus' },
+var VIDEO_BASE = 'videos/';
+
+// Section 1: Photo vs Video-Trained (same casual prompt, randomized)
+var SECTION_1 = [
+  { id: 'photo-casual', label: 'Avatar', file: VIDEO_BASE + 'step1-photo-clone-voice.mp4', platform: 'HeyGen (photo-only)', emotion: 'casual' },
+  { id: 'video-casual', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' }
+];
+
+// Section 2: Emotional Range (all video-trained, randomized)
+var SECTION_2 = [
+  { id: 'video-casual-2', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' },
+  { id: 'video-excited', label: 'Avatar', file: VIDEO_BASE + 'step3b-video-trained-excited.mp4', platform: 'HeyGen (video-trained)', emotion: 'excited' },
+  { id: 'video-reflective', label: 'Avatar', file: VIDEO_BASE + 'step3c-video-trained-reflective.mp4', platform: 'HeyGen (video-trained)', emotion: 'reflective' },
+  { id: 'video-playful', label: 'Avatar', file: VIDEO_BASE + 'step3d-video-trained-playful.mp4', platform: 'HeyGen (video-trained)', emotion: 'playful' }
+];
+
+var SECTION_INTROS = [
+  {
+    title: 'Section 1: Input Quality Comparison',
+    description: 'You\'ll watch 2 clips of the same person saying the same thing. One was generated from just a photo, the other from training video. They\'re randomized — you won\'t know which is which. Rate each on how realistic it looks.'
+  },
+  {
+    title: 'Section 2: Emotional Range',
+    description: 'Now you\'ll watch 4 clips of the same avatar expressing different emotions — casual, excited, reflective, and playful. Rate how well the avatar handles each one. Pay attention to whether the face matches the tone of voice.'
+  }
 ];
 
 var DIMENSIONS = ['realism', 'lipsync', 'movement', 'overall'];
@@ -162,9 +191,10 @@ var DIMENSION_LABELS = {
 };
 
 var testerName = '';
-var currentIdx = 0;
-var shuffledOrder = []; // indices into VIDEOS
-var ratings = []; // per-video: { realism, lipsync, movement, overall }
+var currentSection = 0; // 0 = section 1, 1 = section 2
+var currentIdx = 0; // index within current section's shuffled order
+var sectionOrders = [[], []]; // shuffled indices per section
+var allRatings = [{}, {}]; // keyed by video id per section
 
 // Seeded PRNG
 function mulberry32(seed) {
@@ -194,6 +224,10 @@ function shuffleArray(arr, rng) {
   return a;
 }
 
+function getSectionVideos(section) {
+  return section === 0 ? SECTION_1 : SECTION_2;
+}
+
 function show(id) {
   document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
@@ -204,17 +238,43 @@ function startTest() {
   if (!testerName) { alert('Please enter your name.'); return; }
 
   var rng = mulberry32(hashString(testerName.toLowerCase()));
-  var indices = [];
-  for (var i = 0; i < VIDEOS.length; i++) indices.push(i);
-  shuffledOrder = shuffleArray(indices, rng);
 
-  ratings = VIDEOS.map(function() {
-    return { realism: null, lipsync: null, movement: null, overall: null };
+  // Shuffle section 1
+  var idx1 = [];
+  for (var i = 0; i < SECTION_1.length; i++) idx1.push(i);
+  sectionOrders[0] = shuffleArray(idx1, rng);
+
+  // Shuffle section 2
+  var idx2 = [];
+  for (var i = 0; i < SECTION_2.length; i++) idx2.push(i);
+  sectionOrders[1] = shuffleArray(idx2, rng);
+
+  // Init ratings
+  SECTION_1.forEach(function(v) {
+    allRatings[0][v.id] = { realism: null, lipsync: null, movement: null, overall: null };
+  });
+  SECTION_2.forEach(function(v) {
+    allRatings[1][v.id] = { realism: null, lipsync: null, movement: null, overall: null };
   });
 
+  currentSection = 0;
+  currentIdx = 0;
+  showSectionIntro();
+}
+
+function showSectionIntro() {
+  var intro = SECTION_INTROS[currentSection];
+  var content = document.getElementById('section-intro-content');
+  content.innerHTML = '<h2>' + intro.title + '</h2><p>' + intro.description + '</p>';
+  show('section-intro');
+  window.scrollTo(0, 0);
+}
+
+function beginSection() {
   currentIdx = 0;
   renderVideo();
   show('rating');
+  window.scrollTo(0, 0);
 }
 
 function buildRatingButtons(containerId, dimension) {
@@ -229,9 +289,10 @@ function buildRatingButtons(containerId, dimension) {
     btn.onclick = function() {
       var val = parseInt(this.getAttribute('data-value'));
       var dim = this.getAttribute('data-dimension');
-      var videoIdx = shuffledOrder[currentIdx];
-      ratings[videoIdx][dim] = val;
-      // Update selected state
+      var videos = getSectionVideos(currentSection);
+      var videoIdx = sectionOrders[currentSection][currentIdx];
+      var videoId = videos[videoIdx].id;
+      allRatings[currentSection][videoId][dim] = val;
       this.parentNode.querySelectorAll('.rating-btn').forEach(function(b) {
         b.classList.toggle('selected', parseInt(b.getAttribute('data-value')) === val);
       });
@@ -242,22 +303,31 @@ function buildRatingButtons(containerId, dimension) {
 }
 
 function renderVideo() {
-  var videoIdx = shuffledOrder[currentIdx];
-  var video = VIDEOS[videoIdx];
-  var r = ratings[videoIdx];
+  var videos = getSectionVideos(currentSection);
+  var order = sectionOrders[currentSection];
+  var videoIdx = order[currentIdx];
+  var video = videos[videoIdx];
+  var r = allRatings[currentSection][video.id];
 
-  document.getElementById('progress').textContent = 'Video ' + (currentIdx + 1) + ' of ' + VIDEOS.length;
-  document.getElementById('avatar-label').textContent = video.label + ' ' + String.fromCharCode(65 + currentIdx);
+  var sectionLabel = currentSection === 0 ? 'Section 1' : 'Section 2';
+  var totalInSection = videos.length;
+  document.getElementById('progress').textContent = sectionLabel + ' — Video ' + (currentIdx + 1) + ' of ' + totalInSection;
+
+  // In section 1, use generic letters. In section 2, show the emotion.
+  if (currentSection === 0) {
+    document.getElementById('avatar-label').textContent = video.label + ' ' + String.fromCharCode(65 + currentIdx);
+  } else {
+    // Don't reveal emotion — use letters to keep it blind
+    document.getElementById('avatar-label').textContent = video.label + ' ' + String.fromCharCode(65 + currentIdx);
+  }
 
   var player = document.getElementById('video-player');
   var source = document.getElementById('video-source');
   source.src = video.file;
   player.load();
 
-  // Build rating buttons
   DIMENSIONS.forEach(function(dim) {
     buildRatingButtons('rating-' + dim, dim);
-    // Restore previous rating if going back
     if (r[dim]) {
       var container = document.getElementById('rating-' + dim);
       container.querySelectorAll('.rating-btn').forEach(function(btn) {
@@ -266,23 +336,44 @@ function renderVideo() {
     }
   });
 
-  document.getElementById('prev-btn').style.display = currentIdx === 0 ? 'none' : '';
-  document.getElementById('next-btn').textContent = currentIdx === VIDEOS.length - 1 ? 'See Results' : 'Next';
+  // Back button: hide if first video of first section
+  var isFirstOverall = (currentSection === 0 && currentIdx === 0);
+  document.getElementById('prev-btn').style.display = isFirstOverall ? 'none' : '';
+
+  // Next button text
+  var isLastInSection = currentIdx === videos.length - 1;
+  var isLastSection = currentSection === 1;
+  if (isLastInSection && isLastSection) {
+    document.getElementById('next-btn').textContent = 'See Results';
+  } else if (isLastInSection) {
+    document.getElementById('next-btn').textContent = 'Next Section';
+  } else {
+    document.getElementById('next-btn').textContent = 'Next';
+  }
+
   checkCanProceed();
 }
 
 function checkCanProceed() {
-  var videoIdx = shuffledOrder[currentIdx];
-  var r = ratings[videoIdx];
+  var videos = getSectionVideos(currentSection);
+  var videoIdx = sectionOrders[currentSection][currentIdx];
+  var videoId = videos[videoIdx].id;
+  var r = allRatings[currentSection][videoId];
   var allRated = DIMENSIONS.every(function(dim) { return r[dim] !== null; });
   document.getElementById('next-btn').disabled = !allRated;
 }
 
 function nextVideo() {
-  if (currentIdx < VIDEOS.length - 1) {
+  var videos = getSectionVideos(currentSection);
+  if (currentIdx < videos.length - 1) {
     currentIdx++;
     renderVideo();
     window.scrollTo(0, 0);
+  } else if (currentSection === 0) {
+    // Move to section 2
+    currentSection = 1;
+    currentIdx = 0;
+    showSectionIntro();
   } else {
     showResults();
   }
@@ -293,6 +384,13 @@ function prevVideo() {
     currentIdx--;
     renderVideo();
     window.scrollTo(0, 0);
+  } else if (currentSection === 1) {
+    // Go back to last video of section 1
+    currentSection = 0;
+    currentIdx = SECTION_1.length - 1;
+    renderVideo();
+    show('rating');
+    window.scrollTo(0, 0);
   }
 }
 
@@ -300,25 +398,41 @@ function showResults() {
   var body = document.getElementById('results-body');
   var html = '';
 
-  shuffledOrder.forEach(function(videoIdx, displayIdx) {
-    var video = VIDEOS[videoIdx];
-    var r = ratings[videoIdx];
+  // Section 1 results
+  html += '<div class="results-section-header">Section 1: Input Quality</div>';
+  sectionOrders[0].forEach(function(videoIdx, displayIdx) {
+    var video = SECTION_1[videoIdx];
+    var r = allRatings[0][video.id];
     var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
+    html += buildResultCard(video.label + ' ' + String.fromCharCode(65 + displayIdx), r, avg);
+  });
 
-    html += '<div class="result-card">';
-    html += '<h3>' + video.label + ' ' + String.fromCharCode(65 + displayIdx) + '</h3>';
-    DIMENSIONS.forEach(function(dim) {
-      html += '<div class="result-row">';
-      html += '<span class="result-label">' + DIMENSION_LABELS[dim] + '</span>';
-      html += '<span class="result-value">' + r[dim] + '/5</span>';
-      html += '</div>';
-    });
-    html += '<div class="result-avg">Average: ' + avg.toFixed(1) + '/5</div>';
-    html += '</div>';
+  // Section 2 results
+  html += '<div class="results-section-header">Section 2: Emotional Range</div>';
+  sectionOrders[1].forEach(function(videoIdx, displayIdx) {
+    var video = SECTION_2[videoIdx];
+    var r = allRatings[1][video.id];
+    var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
+    html += buildResultCard(video.label + ' ' + String.fromCharCode(65 + displayIdx), r, avg);
   });
 
   body.innerHTML = html;
   show('results');
+  window.scrollTo(0, 0);
+}
+
+function buildResultCard(title, r, avg) {
+  var html = '<div class="result-card">';
+  html += '<h3>' + title + '</h3>';
+  DIMENSIONS.forEach(function(dim) {
+    html += '<div class="result-row">';
+    html += '<span class="result-label">' + DIMENSION_LABELS[dim] + '</span>';
+    html += '<span class="result-value">' + r[dim] + '/5</span>';
+    html += '</div>';
+  });
+  html += '<div class="result-avg">Average: ' + avg.toFixed(1) + '/5</div>';
+  html += '</div>';
+  return html;
 }
 
 function buildResultsText() {
@@ -327,13 +441,27 @@ function buildResultsText() {
   text += 'Tester: ' + testerName + '\n';
   text += 'Date: ' + new Date().toISOString().split('T')[0] + '\n';
 
-  shuffledOrder.forEach(function(videoIdx, displayIdx) {
-    var video = VIDEOS[videoIdx];
-    var r = ratings[videoIdx];
+  text += '\n--- Section 1: Input Quality (Photo vs Video-Trained) ---';
+  sectionOrders[0].forEach(function(videoIdx, displayIdx) {
+    var video = SECTION_1[videoIdx];
+    var r = allRatings[0][video.id];
     var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
     var letter = String.fromCharCode(65 + displayIdx);
+    text += '\n\n' + video.label + ' ' + letter + ':';
+    text += '\n  Visual Realism: ' + r.realism + '/5';
+    text += '\n  Lip Sync: ' + r.lipsync + '/5';
+    text += '\n  Natural Movement: ' + r.movement + '/5';
+    text += '\n  Overall: ' + r.overall + '/5';
+    text += '\n  Average: ' + avg.toFixed(1) + '/5';
+  });
 
-    text += '\n' + video.label + ' ' + letter + ':';
+  text += '\n\n--- Section 2: Emotional Range ---';
+  sectionOrders[1].forEach(function(videoIdx, displayIdx) {
+    var video = SECTION_2[videoIdx];
+    var r = allRatings[1][video.id];
+    var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
+    var letter = String.fromCharCode(65 + displayIdx);
+    text += '\n\n' + video.label + ' ' + letter + ':';
     text += '\n  Visual Realism: ' + r.realism + '/5';
     text += '\n  Lip Sync: ' + r.lipsync + '/5';
     text += '\n  Natural Movement: ' + r.movement + '/5';
@@ -347,9 +475,15 @@ function buildResultsText() {
 
   // Mapping for Andrew to decode
   text += '\n\n[Mapping:';
-  shuffledOrder.forEach(function(videoIdx, displayIdx) {
+  text += '\n  Section 1:';
+  sectionOrders[0].forEach(function(videoIdx, displayIdx) {
     var letter = String.fromCharCode(65 + displayIdx);
-    text += ' ' + letter + ' = ' + VIDEOS[videoIdx].platform + ',';
+    text += ' ' + letter + ' = ' + SECTION_1[videoIdx].platform + ',';
+  });
+  text += '\n  Section 2:';
+  sectionOrders[1].forEach(function(videoIdx, displayIdx) {
+    var letter = String.fromCharCode(65 + displayIdx);
+    text += ' ' + letter + ' = ' + SECTION_2[videoIdx].emotion + ',';
   });
   text = text.slice(0, -1) + ']';
 
