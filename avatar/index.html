@@ -67,12 +67,15 @@
     <h1>Avatar Blind Test</h1>
     <p>Help us evaluate AI-generated talking head videos. You'll watch short clips and rate how realistic they look.</p>
     <ol class="instructions">
-      <li>You'll go through five sections</li>
+      <li>You'll go through eight sections</li>
       <li><strong>Section 1:</strong> Compare two HeyGen clips — photo-only vs video-trained</li>
       <li><strong>Section 2:</strong> HeyGen emotional range — 4 clips, different emotions</li>
       <li><strong>Section 3:</strong> Compare two D-ID clips — photo-only vs video-trained</li>
       <li><strong>Section 4:</strong> D-ID emotional range — 4 clips, different emotions</li>
-      <li><strong>Section 5:</strong> Cross-platform — HeyGen vs D-ID video-trained head-to-head</li>
+      <li><strong>Section 5:</strong> Compare two Synthesia clips — photo-only vs video-trained</li>
+      <li><strong>Section 6:</strong> Synthesia emotional range — 4 clips, different emotions</li>
+      <li><strong>Section 7:</strong> Tavus emotional range — 4 clips, different emotions</li>
+      <li><strong>Section 8:</strong> Cross-platform — all 4 platforms video-trained head-to-head</li>
       <li>Rate each clip on 4 dimensions using a 1-5 scale</li>
       <li>At the end, copy your results and send them to Andrew</li>
     </ol>
@@ -160,10 +163,10 @@
 // --- VIDEO CONFIG ---
 var VIDEO_BASE = 'videos/';
 
-var NUM_SECTIONS = 5;
+var NUM_SECTIONS = 8;
 
-// Section 1: HeyGen Photo vs Video-Trained (same casual prompt, randomized)
 var SECTIONS = [
+  // Section 1: HeyGen Photo vs Video-Trained (same casual prompt, randomized)
   [
     { id: 'heygen-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'step1-photo-clone-voice.mp4', platform: 'HeyGen (photo-only)', emotion: 'casual' },
     { id: 'heygen-video-casual', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' }
@@ -187,10 +190,31 @@ var SECTIONS = [
     { id: 'did-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-reflective.mp4', platform: 'D-ID (video-trained)', emotion: 'reflective' },
     { id: 'did-video-playful', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-playful.mp4', platform: 'D-ID (video-trained)', emotion: 'playful' }
   ],
-  // Section 5: Cross-Platform — HeyGen vs D-ID video-trained head-to-head
+  // Section 5: Synthesia Photo vs Video-Trained (same casual prompt, randomized)
+  [
+    { id: 'synthesia-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'synthesia-photo-casual.mp4', platform: 'Synthesia (photo-only)', emotion: 'casual' },
+    { id: 'synthesia-video-casual', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' }
+  ],
+  // Section 6: Synthesia Emotional Range (all video-trained, randomized)
+  [
+    { id: 'synthesia-video-casual-2', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' },
+    { id: 'synthesia-video-excited', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-excited.mp4', platform: 'Synthesia (video-trained)', emotion: 'excited' },
+    { id: 'synthesia-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-reflective.mp4', platform: 'Synthesia (video-trained)', emotion: 'reflective' },
+    { id: 'synthesia-video-playful', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-playful.mp4', platform: 'Synthesia (video-trained)', emotion: 'playful' }
+  ],
+  // Section 7: Tavus Emotional Range (video-trained only, no photo option)
+  [
+    { id: 'tavus-video-casual', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-casual.mp4', platform: 'Tavus (video-trained)', emotion: 'casual' },
+    { id: 'tavus-video-excited', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-excited.mp4', platform: 'Tavus (video-trained)', emotion: 'excited' },
+    { id: 'tavus-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-reflective.mp4', platform: 'Tavus (video-trained)', emotion: 'reflective' },
+    { id: 'tavus-video-playful', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-playful.mp4', platform: 'Tavus (video-trained)', emotion: 'playful' }
+  ],
+  // Section 8: Cross-Platform — all 4 platforms video-trained head-to-head
   [
     { id: 'xplat-heygen-video', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' },
-    { id: 'xplat-did-video', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID (video-trained)', emotion: 'casual' }
+    { id: 'xplat-did-video', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID (video-trained)', emotion: 'casual' },
+    { id: 'xplat-synthesia-video', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' },
+    { id: 'xplat-tavus-video', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-casual.mp4', platform: 'Tavus (video-trained)', emotion: 'casual' }
   ]
 ];
 
@@ -212,8 +236,20 @@ var SECTION_INTROS = [
     description: 'Same test as Section 2, but with a different platform. Four clips with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
   },
   {
-    title: 'Section 5: Head-to-Head',
-    description: 'Final round. Two clips from different platforms, both video-trained, both saying the same casual script. Which one looks more real? Rate each as before.'
+    title: 'Section 5: Synthesia — Input Quality',
+    description: 'Another platform. Two clips of the same person saying the same thing — one from a photo, one from training video. Rate each on how realistic it looks.'
+  },
+  {
+    title: 'Section 6: Synthesia — Emotional Range',
+    description: 'Four clips from the same platform with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
+  },
+  {
+    title: 'Section 7: Tavus — Emotional Range',
+    description: 'This platform only supports video-trained avatars (no photo option). Four clips with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
+  },
+  {
+    title: 'Section 8: Head-to-Head',
+    description: 'Final round. Four clips from four different platforms, all video-trained, all saying the same casual script. Which one looks most real? Rate each as before.'
   }
 ];
 
@@ -222,7 +258,10 @@ var SECTION_NAMES = [
   'Section 2: HeyGen Emotional Range',
   'Section 3: D-ID Input Quality',
   'Section 4: D-ID Emotional Range',
-  'Section 5: Cross-Platform Head-to-Head'
+  'Section 5: Synthesia Input Quality',
+  'Section 6: Synthesia Emotional Range',
+  'Section 7: Tavus Emotional Range',
+  'Section 8: Cross-Platform Head-to-Head'
 ];
 
 var DIMENSIONS = ['realism', 'lipsync', 'movement', 'overall'];
@@ -488,8 +527,9 @@ function buildResultsText() {
     sectionOrders[s].forEach(function(videoIdx, displayIdx) {
       var video = SECTIONS[s][videoIdx];
       var letter = String.fromCharCode(65 + displayIdx);
-      // For input quality & head-to-head sections, show platform. For emotional range, show emotion.
-      var decoded = (s === 1 || s === 3) ? video.emotion : video.platform;
+      // For emotional range sections, show emotion. For input quality & head-to-head, show platform.
+      var isEmotionalRange = (s === 1 || s === 3 || s === 5 || s === 6);
+      var decoded = isEmotionalRange ? video.emotion : video.platform;
       text += ' ' + letter + ' = ' + decoded + ',';
     });
   }
