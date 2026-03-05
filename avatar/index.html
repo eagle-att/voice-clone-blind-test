@@ -56,6 +56,10 @@
   .result-label { color: #86868b; }
   .result-value { font-weight: 600; }
   .result-avg { font-size: 18px; font-weight: 700; text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #d2d2d7; }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+  .summary-table th, .summary-table td { text-align: left; padding: 8px; border-bottom: 1px solid #e8e8ed; }
+  .summary-table th { font-weight: 600; color: #86868b; }
+  .summary-table td:first-child { font-weight: 600; }
   .copy-msg { color: #34c759; font-size: 13px; margin-top: 8px; display: none; }
 </style>
 </head>
@@ -67,17 +71,11 @@
     <h1>Avatar Blind Test</h1>
     <p>Help us evaluate AI-generated talking head videos. You'll watch short clips and rate how realistic they look.</p>
     <ol class="instructions">
-      <li>You'll go through nine sections</li>
-      <li><strong>Section 1:</strong> Compare two HeyGen clips — photo-only vs video-trained</li>
-      <li><strong>Section 2:</strong> HeyGen emotional range — 4 clips, different emotions</li>
-      <li><strong>Section 3:</strong> Compare two D-ID clips — photo-only vs video-trained</li>
-      <li><strong>Section 4:</strong> D-ID emotional range — 4 clips, different emotions</li>
-      <li><strong>Section 5:</strong> Compare two Synthesia clips — photo-only vs video-trained</li>
-      <li><strong>Section 6:</strong> Synthesia emotional range — 4 clips, different emotions</li>
-      <li><strong>Section 7:</strong> Tavus emotional range — 4 clips, different emotions</li>
-      <li><strong>Section 8:</strong> Lemon Slice emotional range — 4 clips, different emotions (photo-only)</li>
-      <li><strong>Section 9:</strong> Cross-platform — all 5 platforms head-to-head</li>
+      <li>You'll go through 5 rounds</li>
+      <li><strong>Rounds 1-4:</strong> Compare 5 different AI avatars saying the same thing with a specific emotion (casual, excited, reflective, playful)</li>
+      <li><strong>Round 5:</strong> Compare 6 avatars — some generated from a photo, others from training video</li>
       <li>Rate each clip on 4 dimensions using a 1-5 scale</li>
+      <li>Clips are randomized — you won't know which system made which</li>
       <li>At the end, copy your results and send them to Andrew</li>
     </ol>
     <p style="font-size:13px; color:#86868b; margin-top:12px;"><strong>Rating scale:</strong> 1 = Obviously AI, 5 = Could fool you into thinking it's real</p>
@@ -161,121 +159,85 @@
 </div>
 
 <script>
-// --- VIDEO CONFIG ---
 var VIDEO_BASE = 'videos/';
 
-var NUM_SECTIONS = 9;
+var NUM_SECTIONS = 5;
 
+// Rounds 1-4: Cross-platform comparison by emotion
+// Each round has all 5 platforms, randomized per tester
 var SECTIONS = [
-  // Section 1: HeyGen Photo vs Video-Trained (same casual prompt, randomized)
+  // Round 1: Casual
   [
-    { id: 'heygen-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'step1-photo-clone-voice.mp4', platform: 'HeyGen (photo-only)', emotion: 'casual' },
-    { id: 'heygen-video-casual', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' }
+    { id: 'heygen-casual', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen', input: 'video-trained' },
+    { id: 'did-casual', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID', input: 'video-trained' },
+    { id: 'synthesia-casual', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia', input: 'video-trained' },
+    { id: 'tavus-casual', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-casual.mp4', platform: 'Tavus', input: 'video-trained' },
+    { id: 'lemonslice-casual', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-casual.mp4', platform: 'Lemon Slice', input: 'photo-only' }
   ],
-  // Section 2: HeyGen Emotional Range (all video-trained, randomized)
+  // Round 2: Excited
   [
-    { id: 'heygen-video-casual-2', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' },
-    { id: 'heygen-video-excited', label: 'Avatar', file: VIDEO_BASE + 'step3b-video-trained-excited.mp4', platform: 'HeyGen (video-trained)', emotion: 'excited' },
-    { id: 'heygen-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'step3c-video-trained-reflective.mp4', platform: 'HeyGen (video-trained)', emotion: 'reflective' },
-    { id: 'heygen-video-playful', label: 'Avatar', file: VIDEO_BASE + 'step3d-video-trained-playful.mp4', platform: 'HeyGen (video-trained)', emotion: 'playful' }
+    { id: 'heygen-excited', label: 'Avatar', file: VIDEO_BASE + 'step3b-video-trained-excited.mp4', platform: 'HeyGen', input: 'video-trained' },
+    { id: 'did-excited', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-excited.mp4', platform: 'D-ID', input: 'video-trained' },
+    { id: 'synthesia-excited', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-excited.mp4', platform: 'Synthesia', input: 'video-trained' },
+    { id: 'tavus-excited', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-excited.mp4', platform: 'Tavus', input: 'video-trained' },
+    { id: 'lemonslice-excited', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-excited.mp4', platform: 'Lemon Slice', input: 'photo-only' }
   ],
-  // Section 3: D-ID Photo vs Video-Trained (same casual prompt, randomized)
+  // Round 3: Reflective
   [
-    { id: 'did-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'd-id-photo-casual.mp4', platform: 'D-ID (photo-only)', emotion: 'casual' },
-    { id: 'did-video-casual', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID (video-trained)', emotion: 'casual' }
+    { id: 'heygen-reflective', label: 'Avatar', file: VIDEO_BASE + 'step3c-video-trained-reflective.mp4', platform: 'HeyGen', input: 'video-trained' },
+    { id: 'did-reflective', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-reflective.mp4', platform: 'D-ID', input: 'video-trained' },
+    { id: 'synthesia-reflective', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-reflective.mp4', platform: 'Synthesia', input: 'video-trained' },
+    { id: 'tavus-reflective', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-reflective.mp4', platform: 'Tavus', input: 'video-trained' },
+    { id: 'lemonslice-reflective', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-reflective.mp4', platform: 'Lemon Slice', input: 'photo-only' }
   ],
-  // Section 4: D-ID Emotional Range (all video-trained, randomized)
+  // Round 4: Playful
   [
-    { id: 'did-video-casual-2', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID (video-trained)', emotion: 'casual' },
-    { id: 'did-video-excited', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-excited.mp4', platform: 'D-ID (video-trained)', emotion: 'excited' },
-    { id: 'did-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-reflective.mp4', platform: 'D-ID (video-trained)', emotion: 'reflective' },
-    { id: 'did-video-playful', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-playful.mp4', platform: 'D-ID (video-trained)', emotion: 'playful' }
+    { id: 'heygen-playful', label: 'Avatar', file: VIDEO_BASE + 'step3d-video-trained-playful.mp4', platform: 'HeyGen', input: 'video-trained' },
+    { id: 'did-playful', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-playful.mp4', platform: 'D-ID', input: 'video-trained' },
+    { id: 'synthesia-playful', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-playful.mp4', platform: 'Synthesia', input: 'video-trained' },
+    { id: 'tavus-playful', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-playful.mp4', platform: 'Tavus', input: 'video-trained' },
+    { id: 'lemonslice-playful', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-playful.mp4', platform: 'Lemon Slice', input: 'photo-only' }
   ],
-  // Section 5: Synthesia Photo vs Video-Trained (same casual prompt, randomized)
+  // Round 5: Data Moat — photo vs video-trained (3 platforms that support both)
   [
-    { id: 'synthesia-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'synthesia-photo-casual.mp4', platform: 'Synthesia (photo-only)', emotion: 'casual' },
-    { id: 'synthesia-video-casual', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' }
-  ],
-  // Section 6: Synthesia Emotional Range (all video-trained, randomized)
-  [
-    { id: 'synthesia-video-casual-2', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' },
-    { id: 'synthesia-video-excited', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-excited.mp4', platform: 'Synthesia (video-trained)', emotion: 'excited' },
-    { id: 'synthesia-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-reflective.mp4', platform: 'Synthesia (video-trained)', emotion: 'reflective' },
-    { id: 'synthesia-video-playful', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-playful.mp4', platform: 'Synthesia (video-trained)', emotion: 'playful' }
-  ],
-  // Section 7: Tavus Emotional Range (video-trained only, no photo option)
-  [
-    { id: 'tavus-video-casual', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-casual.mp4', platform: 'Tavus (video-trained)', emotion: 'casual' },
-    { id: 'tavus-video-excited', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-excited.mp4', platform: 'Tavus (video-trained)', emotion: 'excited' },
-    { id: 'tavus-video-reflective', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-reflective.mp4', platform: 'Tavus (video-trained)', emotion: 'reflective' },
-    { id: 'tavus-video-playful', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-playful.mp4', platform: 'Tavus (video-trained)', emotion: 'playful' }
-  ],
-  // Section 8: Lemon Slice Emotional Range (photo-only, no video training available)
-  [
-    { id: 'lemonslice-photo-casual', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-casual.mp4', platform: 'Lemon Slice (photo-only)', emotion: 'casual' },
-    { id: 'lemonslice-photo-excited', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-excited.mp4', platform: 'Lemon Slice (photo-only)', emotion: 'excited' },
-    { id: 'lemonslice-photo-reflective', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-reflective.mp4', platform: 'Lemon Slice (photo-only)', emotion: 'reflective' },
-    { id: 'lemonslice-photo-playful', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-playful.mp4', platform: 'Lemon Slice (photo-only)', emotion: 'playful' }
-  ],
-  // Section 9: Cross-Platform — all 5 platforms head-to-head (casual)
-  [
-    { id: 'xplat-heygen-video', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen (video-trained)', emotion: 'casual' },
-    { id: 'xplat-did-video', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID (video-trained)', emotion: 'casual' },
-    { id: 'xplat-synthesia-video', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia (video-trained)', emotion: 'casual' },
-    { id: 'xplat-tavus-video', label: 'Avatar', file: VIDEO_BASE + 'tavus-video-casual.mp4', platform: 'Tavus (video-trained)', emotion: 'casual' },
-    { id: 'xplat-lemonslice-photo', label: 'Avatar', file: VIDEO_BASE + 'lemonslice-photo-casual.mp4', platform: 'Lemon Slice (photo-only)', emotion: 'casual' }
+    { id: 'heygen-photo', label: 'Avatar', file: VIDEO_BASE + 'step1-photo-clone-voice.mp4', platform: 'HeyGen', input: 'photo-only' },
+    { id: 'heygen-video', label: 'Avatar', file: VIDEO_BASE + 'step2-video-trained-casual.mp4', platform: 'HeyGen', input: 'video-trained' },
+    { id: 'did-photo', label: 'Avatar', file: VIDEO_BASE + 'd-id-photo-casual.mp4', platform: 'D-ID', input: 'photo-only' },
+    { id: 'did-video', label: 'Avatar', file: VIDEO_BASE + 'd-id-video-casual.mp4', platform: 'D-ID', input: 'video-trained' },
+    { id: 'synthesia-photo', label: 'Avatar', file: VIDEO_BASE + 'synthesia-photo-casual.mp4', platform: 'Synthesia', input: 'photo-only' },
+    { id: 'synthesia-video', label: 'Avatar', file: VIDEO_BASE + 'synthesia-video-casual.mp4', platform: 'Synthesia', input: 'video-trained' }
   ]
 ];
 
 var SECTION_INTROS = [
   {
-    title: 'Section 1: HeyGen — Input Quality',
-    description: 'You\'ll watch 2 clips of the same person saying the same thing. One was generated from just a photo, the other from training video. They\'re randomized — you won\'t know which is which. Rate each on how realistic it looks.'
+    title: 'Round 1: Casual',
+    description: 'You\'ll watch 5 clips of the same person delivering a casual message. Each clip was generated by a different AI system — you won\'t know which is which. Rate each on how realistic it looks.'
   },
   {
-    title: 'Section 2: HeyGen — Emotional Range',
-    description: 'Now you\'ll watch 4 clips of the same avatar expressing different emotions — casual, excited, reflective, and playful. Rate how well the avatar handles each one. Pay attention to whether the face matches the tone of voice.'
+    title: 'Round 2: Excited',
+    description: 'Same setup, different emotion. 5 clips of the same person expressing excitement. Each from a different AI system, randomized. Rate each one.'
   },
   {
-    title: 'Section 3: D-ID — Input Quality',
-    description: 'Same test as Section 1, but with a different platform. Two clips of the same person saying the same thing — one from a photo, one from training video. Rate each on how realistic it looks.'
+    title: 'Round 3: Reflective',
+    description: '5 clips of the same person in a reflective, thoughtful tone. Each from a different AI system. Rate each one.'
   },
   {
-    title: 'Section 4: D-ID — Emotional Range',
-    description: 'Same test as Section 2, but with a different platform. Four clips with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
+    title: 'Round 4: Playful',
+    description: 'Last emotion round. 5 clips of the same person being playful. Each from a different AI system. Rate each one.'
   },
   {
-    title: 'Section 5: Synthesia — Input Quality',
-    description: 'Another platform. Two clips of the same person saying the same thing — one from a photo, one from training video. Rate each on how realistic it looks.'
-  },
-  {
-    title: 'Section 6: Synthesia — Emotional Range',
-    description: 'Four clips from the same platform with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
-  },
-  {
-    title: 'Section 7: Tavus — Emotional Range',
-    description: 'This platform only supports video-trained avatars (no photo option). Four clips with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
-  },
-  {
-    title: 'Section 8: Lemon Slice — Emotional Range',
-    description: 'This platform only supports photo-based avatars (no video training). Four clips with different emotions — casual, excited, reflective, and playful. Rate how well this avatar handles each one.'
-  },
-  {
-    title: 'Section 9: Head-to-Head',
-    description: 'Final round. Five clips from five different platforms, all saying the same casual script. Which one looks most real? Rate each as before.'
+    title: 'Round 5: Photo vs Video Input',
+    description: 'Some AI systems can build an avatar from just a photo. Others can also use training video for better results. You\'ll watch 6 clips — some built from a photo, some from video — all saying the same casual message. Rate how realistic each one looks.'
   }
 ];
 
 var SECTION_NAMES = [
-  'Section 1: HeyGen Input Quality',
-  'Section 2: HeyGen Emotional Range',
-  'Section 3: D-ID Input Quality',
-  'Section 4: D-ID Emotional Range',
-  'Section 5: Synthesia Input Quality',
-  'Section 6: Synthesia Emotional Range',
-  'Section 7: Tavus Emotional Range',
-  'Section 8: Lemon Slice Emotional Range',
-  'Section 9: Cross-Platform Head-to-Head'
+  'Round 1: Casual',
+  'Round 2: Excited',
+  'Round 3: Reflective',
+  'Round 4: Playful',
+  'Round 5: Photo vs Video Input'
 ];
 
 var DIMENSIONS = ['realism', 'lipsync', 'movement', 'overall'];
@@ -331,7 +293,6 @@ function startTest() {
 
   var rng = mulberry32(hashString(testerName.toLowerCase()));
 
-  // Shuffle each section independently
   sectionOrders = [];
   allRatings = [];
   for (var s = 0; s < NUM_SECTIONS; s++) {
@@ -398,11 +359,11 @@ function renderVideo() {
   var video = videos[videoIdx];
   var r = allRatings[currentSection][video.id];
 
-  var sectionLabel = 'Section ' + (currentSection + 1);
+  var roundLabel = 'Round ' + (currentSection + 1);
   var totalInSection = videos.length;
-  document.getElementById('progress').textContent = sectionLabel + ' — Video ' + (currentIdx + 1) + ' of ' + totalInSection;
+  document.getElementById('progress').textContent = roundLabel + ' — Clip ' + (currentIdx + 1) + ' of ' + totalInSection;
 
-  document.getElementById('avatar-label').textContent = video.label + ' ' + String.fromCharCode(65 + currentIdx);
+  document.getElementById('avatar-label').textContent = 'Avatar ' + String.fromCharCode(65 + currentIdx);
 
   var player = document.getElementById('video-player');
   var source = document.getElementById('video-source');
@@ -419,17 +380,15 @@ function renderVideo() {
     }
   });
 
-  // Back button: hide if first video of first section
   var isFirstOverall = (currentSection === 0 && currentIdx === 0);
   document.getElementById('prev-btn').style.display = isFirstOverall ? 'none' : '';
 
-  // Next button text
   var isLastInSection = currentIdx === videos.length - 1;
   var isLastSection = currentSection === NUM_SECTIONS - 1;
   if (isLastInSection && isLastSection) {
     document.getElementById('next-btn').textContent = 'See Results';
   } else if (isLastInSection) {
-    document.getElementById('next-btn').textContent = 'Next Section';
+    document.getElementById('next-btn').textContent = 'Next Round';
   } else {
     document.getElementById('next-btn').textContent = 'Next';
   }
@@ -479,15 +438,58 @@ function showResults() {
   var body = document.getElementById('results-body');
   var html = '';
 
+  // Per-round results with platform reveal
   for (var s = 0; s < NUM_SECTIONS; s++) {
     html += '<div class="results-section-header">' + SECTION_NAMES[s] + '</div>';
     sectionOrders[s].forEach(function(videoIdx, displayIdx) {
       var video = SECTIONS[s][videoIdx];
       var r = allRatings[s][video.id];
       var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
-      html += buildResultCard(video.label + ' ' + String.fromCharCode(65 + displayIdx), r, avg);
+      var title = 'Avatar ' + String.fromCharCode(65 + displayIdx) + ' — ' + video.platform + ' (' + video.input + ')';
+      html += buildResultCard(title, r, avg);
     });
   }
+
+  // Platform summary across rounds 1-4
+  html += '<div class="results-section-header">Platform Summary (Rounds 1-4)</div>';
+  var platformTotals = {};
+  var platformCounts = {};
+  for (var s = 0; s < 4; s++) {
+    SECTIONS[s].forEach(function(video) {
+      var r = allRatings[s][video.id];
+      if (!platformTotals[video.platform]) {
+        platformTotals[video.platform] = { realism: 0, lipsync: 0, movement: 0, overall: 0 };
+        platformCounts[video.platform] = 0;
+      }
+      platformTotals[video.platform].realism += r.realism;
+      platformTotals[video.platform].lipsync += r.lipsync;
+      platformTotals[video.platform].movement += r.movement;
+      platformTotals[video.platform].overall += r.overall;
+      platformCounts[video.platform]++;
+    });
+  }
+
+  var platformAvgs = [];
+  for (var name in platformTotals) {
+    var t = platformTotals[name];
+    var c = platformCounts[name];
+    var avgAll = (t.realism + t.lipsync + t.movement + t.overall) / (c * 4);
+    platformAvgs.push({
+      name: name,
+      realism: (t.realism / c).toFixed(1),
+      lipsync: (t.lipsync / c).toFixed(1),
+      movement: (t.movement / c).toFixed(1),
+      overall: (t.overall / c).toFixed(1),
+      avg: avgAll.toFixed(1)
+    });
+  }
+  platformAvgs.sort(function(a, b) { return b.avg - a.avg; });
+
+  html += '<table class="summary-table"><tr><th>Platform</th><th>Realism</th><th>Lip Sync</th><th>Movement</th><th>Overall</th><th>Avg</th></tr>';
+  platformAvgs.forEach(function(p) {
+    html += '<tr><td>' + p.name + '</td><td>' + p.realism + '</td><td>' + p.lipsync + '</td><td>' + p.movement + '</td><td>' + p.overall + '</td><td>' + p.avg + '</td></tr>';
+  });
+  html += '</table>';
 
   body.innerHTML = html;
   show('results');
@@ -521,7 +523,7 @@ function buildResultsText() {
       var r = allRatings[s][video.id];
       var avg = (r.realism + r.lipsync + r.movement + r.overall) / 4;
       var letter = String.fromCharCode(65 + displayIdx);
-      text += '\n\n' + video.label + ' ' + letter + ':';
+      text += '\n\nAvatar ' + letter + ' [' + video.platform + ' (' + video.input + ')]:';
       text += '\n  Visual Realism: ' + r.realism + '/5';
       text += '\n  Lip Sync: ' + r.lipsync + '/5';
       text += '\n  Natural Movement: ' + r.movement + '/5';
@@ -530,24 +532,35 @@ function buildResultsText() {
     });
   }
 
+  // Platform summary
+  var platformTotals = {};
+  var platformCounts = {};
+  for (var s = 0; s < 4; s++) {
+    SECTIONS[s].forEach(function(video) {
+      var r = allRatings[s][video.id];
+      if (!platformTotals[video.platform]) {
+        platformTotals[video.platform] = 0;
+        platformCounts[video.platform] = 0;
+      }
+      platformTotals[video.platform] += r.realism + r.lipsync + r.movement + r.overall;
+      platformCounts[video.platform] += 4;
+    });
+  }
+
+  var platformAvgs = [];
+  for (var name in platformTotals) {
+    platformAvgs.push({ name: name, avg: (platformTotals[name] / platformCounts[name]).toFixed(1) });
+  }
+  platformAvgs.sort(function(a, b) { return b.avg - a.avg; });
+
+  text += '\n\nPlatform Summary (Rounds 1-4):';
+  platformAvgs.forEach(function(p) {
+    text += '\n  ' + p.name + ': ' + p.avg + '/5';
+  });
+
   if (feedback) {
     text += '\n\nFeedback: "' + feedback + '"';
   }
-
-  // Mapping for Andrew to decode
-  text += '\n\n[Mapping:';
-  for (var s = 0; s < NUM_SECTIONS; s++) {
-    text += '\n  ' + SECTION_NAMES[s] + ':';
-    sectionOrders[s].forEach(function(videoIdx, displayIdx) {
-      var video = SECTIONS[s][videoIdx];
-      var letter = String.fromCharCode(65 + displayIdx);
-      // For emotional range sections, show emotion. For input quality & head-to-head, show platform.
-      var isEmotionalRange = (s === 1 || s === 3 || s === 5 || s === 6 || s === 7);
-      var decoded = isEmotionalRange ? video.emotion : video.platform;
-      text += ' ' + letter + ' = ' + decoded + ',';
-    });
-  }
-  text = text.slice(0, -1) + ']';
 
   return text;
 }
